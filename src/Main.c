@@ -10,30 +10,30 @@
 #error "Platform not supported!"
 #endif
 
-typedef struct vec3d{
+typedef struct Vec3D{
 	float x,y,z;
-} vec3d;
+} Vec3D;
 
-typedef struct triangle{
-	vec3d p[3];
-} triangle;
+typedef struct Tri3D{
+	Vec3D p[3];
+} Tri3D;
 
 typedef struct mesh{
-	Vector tris; // Vector<triangle>
+	Vector tris; // Vector<Tri3D>
 } mesh;
 
-typedef struct mat4x4{
+typedef struct M4x4D{
 	float m[4][4];
-} mat4x4;
+} M4x4D;
 
-mat4x4 mat4x4_New(){
-	mat4x4 m;
+M4x4D M4x4D_New(){
+	M4x4D m;
 	memset(&m.m,0,sizeof(m.m));
 	return m;
 }
 
 
-void MultiplyMatrixVector(vec3d i, vec3d* o, mat4x4 m){
+void MultiplyMatrixVector(Vec3D i, Vec3D* o, M4x4D m){
 	o->x = i.x * m.m[0][0] + i.y * m.m[1][0] + i.z * m.m[2][0] + m.m[3][0];
 	o->y = i.x * m.m[0][1] + i.y * m.m[1][1] + i.z * m.m[2][1] + m.m[3][1];
 	o->z = i.x * m.m[0][2] + i.y * m.m[1][2] + i.z * m.m[2][2] + m.m[3][2];
@@ -47,13 +47,13 @@ void MultiplyMatrixVector(vec3d i, vec3d* o, mat4x4 m){
 }
 
 mesh meshCube;
-mat4x4 matProj;
+M4x4D matProj;
 float fTheta;
 
 void Setup(AlxWindow* w){
-	meshCube = (mesh){ Vector_New(sizeof(triangle)) };
+	meshCube = (mesh){ Vector_New(sizeof(Tri3D)) };
 
-	triangle tris[12] = {
+	Tri3D tris[12] = {
 	// SOUTH
 	{ 0.0f, 0.0f, 0.0f,    0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 0.0f },
 	{ 0.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 0.0f, 0.0f },
@@ -85,7 +85,7 @@ void Setup(AlxWindow* w){
 	float fAspectRatio = (float)GetHeight() / (float)GetWidth();
 	float fFovRad = 1.0f / tanf(fFov * 0.5f / 180.0f * 3.14159f);
 	
-	matProj = mat4x4_New();
+	matProj = M4x4D_New();
 	matProj.m[0][0] = fAspectRatio * fFovRad;
 	matProj.m[1][1] = fFovRad;
 	matProj.m[2][2] = fFar / (fFar - fNear);
@@ -98,8 +98,8 @@ void Update(AlxWindow* w){
 	// Clear Screen
 	Clear(BLACK);
 	// Set up rotation matrices
-	mat4x4 matRotZ = mat4x4_New();
-	mat4x4 matRotX = mat4x4_New();;
+	M4x4D matRotZ = M4x4D_New();
+	M4x4D matRotX = M4x4D_New();;
 
 	fTheta += 1.0f * w->ElapsedTime;
 	// Rotation Z
@@ -119,9 +119,9 @@ void Update(AlxWindow* w){
 	
 	// Draw Triangles
 	for (int i = 0;i<meshCube.tris.size;i++){
-		triangle tri = *(triangle*)Vector_Get(&meshCube.tris,i);
+		Tri3D tri = *(Tri3D*)Vector_Get(&meshCube.tris,i);
 
-		triangle triProjected, triTranslated, triRotatedZ, triRotatedZX;
+		Tri3D triProjected, triTranslated, triRotatedZ, triRotatedZX;
 		// Rotate in Z-Axis
 		MultiplyMatrixVector(tri.p[0],&triRotatedZ.p[0],matRotZ);
 		MultiplyMatrixVector(tri.p[1],&triRotatedZ.p[1],matRotZ);
@@ -135,7 +135,7 @@ void Update(AlxWindow* w){
 		triTranslated.p[0].z = triRotatedZX.p[0].z + 3.0f;
 		triTranslated.p[1].z = triRotatedZX.p[1].z + 3.0f;
 		triTranslated.p[2].z = triRotatedZX.p[2].z + 3.0f;
-		// Project triangles from 3D --> 2D
+		// Project Tri3Ds from 3D --> 2D
 		MultiplyMatrixVector(triTranslated.p[0],&triProjected.p[0],matProj);
 		MultiplyMatrixVector(triTranslated.p[1],&triProjected.p[1],matProj);
 		MultiplyMatrixVector(triTranslated.p[2],&triProjected.p[2],matProj);
@@ -149,7 +149,7 @@ void Update(AlxWindow* w){
 		triProjected.p[1].y *= 0.5f * (float)GetHeight();
 		triProjected.p[2].x *= 0.5f * (float)GetWidth();
 		triProjected.p[2].y *= 0.5f * (float)GetHeight();
-		// Rasterize triangle
+		// Rasterize Tri3D
 		RenderTriangleWire(
 			((Vec2){ triProjected.p[0].x,triProjected.p[0].y }),
 			((Vec2){ triProjected.p[1].x,triProjected.p[1].y }),
